@@ -67,7 +67,7 @@ namespace iiConfig
 
             Process rootProcess = new Process();
             rootProcess.StartInfo.FileName = "adb";
-            rootProcess.StartInfo.Arguments = "root";
+            rootProcess.StartInfo.Arguments = $"-s {strDevice} root";
             rootProcess.StartInfo.RedirectStandardOutput = true;
             rootProcess.StartInfo.RedirectStandardError = true;
             rootProcess.StartInfo.UseShellExecute = false;
@@ -134,7 +134,7 @@ namespace iiConfig
             //MessageBox.Show(dbUpdateCmd);
             Process dbProcess = new Process();
             dbProcess.StartInfo.FileName = "adb";
-            dbProcess.StartInfo.Arguments = $"shell sqlite3 \\\"{dbLoc}\\\" \\\"{dbUpdateCmd}\\\"";
+            dbProcess.StartInfo.Arguments = $"-s {strDevice} shell sqlite3 \\\"{dbLoc}\\\" \\\"{dbUpdateCmd}\\\"";
             dbProcess.StartInfo.RedirectStandardOutput = true;
             dbProcess.StartInfo.RedirectStandardError = true;
             dbProcess.StartInfo.UseShellExecute = false;
@@ -183,9 +183,15 @@ namespace iiConfig
 
         private void btnReboot_Click(object sender, EventArgs e)
         {
+            if ((strDevice == "null") || (strDevice == ""))
+            {
+                MessageBox.Show("Select a device first.", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
             Process process = new Process();
             process.StartInfo.FileName = "adb";
-            process.StartInfo.Arguments = "reboot";
+            process.StartInfo.Arguments = $"-s {strDevice} reboot";
             process.StartInfo.RedirectStandardOutput = true;
             process.StartInfo.RedirectStandardError = true;
             process.StartInfo.UseShellExecute = false;
@@ -208,8 +214,55 @@ namespace iiConfig
 
         private void btnFixClock_Click(object sender, EventArgs e)
         {
+            if ((strDevice == "null") || (strDevice == ""))
+            {
+                MessageBox.Show("Select a device first.", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
             string formattedDateTime = DateTime.Now.ToString("MMddHHmmyyyy.ss");
-            MessageBox.Show(formattedDateTime, "Date/Time", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            // MessageBox.Show(formattedDateTime, "Date/Time", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+            Process process1 = new Process();
+            process1.StartInfo.FileName = "adb";
+            process1.StartInfo.Arguments = $"-s {strDevice} shell toybox date";
+            process1.StartInfo.RedirectStandardOutput = true;
+            process1.StartInfo.RedirectStandardError = true;
+            process1.StartInfo.UseShellExecute = false;
+            process1.StartInfo.CreateNoWindow = true;
+
+            process1.Start();
+
+            string output = process1.StandardOutput.ReadToEnd();
+            int exitCode = process1.ExitCode;
+
+            if (exitCode != 0)
+            {
+                MessageBox.Show($"Error code {exitCode}: {output}", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            Process process2 = new Process();
+            process2.StartInfo.FileName = "adb";
+            process2.StartInfo.Arguments = $"-s {strDevice} shell \"su 0 toybox date {formattedDateTime}\"";
+            process2.StartInfo.RedirectStandardOutput = true;
+            process2.StartInfo.RedirectStandardError = true;
+            process2.StartInfo.UseShellExecute = false;
+            process2.StartInfo.CreateNoWindow = true;
+
+            process2.Start();
+
+            output = process2.StandardOutput.ReadToEnd();
+            exitCode = process2.ExitCode;
+
+            if (exitCode != 0)
+            {
+                MessageBox.Show($"Error code {exitCode}: {output}", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            } else
+            {
+                MessageBox.Show("Date and time updated successfully!", "Success!", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+
         }
     }
 }
