@@ -9,11 +9,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="mameconfig.dtd" />
+    <None Remove="mameconfig.xsd" />
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="mameconfig.dtd">
+    <Content Include="mameconfig.xsd">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

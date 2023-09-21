@@ -18,8 +18,11 @@ namespace iiConfig
 
         private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
-            strDevice = lbDevices.Items[lbDevices.SelectedIndex].ToString().Split(new char[] { '\t' })[0].ToString().Split(new char[] { ':' })[0].Split(new char[] { '\n' })[1];
-            label1.Text = "Selected Device: " + strDevice;
+            if (lbDevices.SelectedIndex > 0)
+            {
+                strDevice = lbDevices.Items[lbDevices.SelectedIndex].ToString().Split(new char[] { '\t' })[0].ToString().Split(new char[] { ':' })[0].Split(new char[] { '\n' })[1];
+                label1.Text = "Selected Device: " + strDevice;
+            }
         }
 
         private void frmMain_Load(object sender, EventArgs e)

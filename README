@@ -1,0 +1,16 @@
+iiConfig
+By Ryan Souders, AKA HonkeyKong
+
+This tool was made for pushing custom MAME CFG files to your iiRcade cabinet, as a means of handling stubborn games whose controls don't fit the standard iiRcade configuration.
+
+First things first, make sure the game you're configuring is installed on the cabinet first, or this won't work.
+
+Select your iiRcade from the list (it helps if you disconnect other Android devices first, just to avoid confusion), then pick your CFG file with the "Select CFG" button, or just drag and drop it onto the app.
+
+Next, if the game is a light gun game, simply check the "Light Gun" box to inform the app that it needs to perform extra steps after pushing the CFG. If it's just a regular game, leave the box unchecked, of course.
+
+Now that you've selected your device and loaded a CFG, as long as there weren't any complaints from the app, you're good to go! Press the "Push CFG" button and enjoy!
+
+Oh yeah, I also added buttons to reboot your cabinet, and to fix your clock in case you're one of those folks who likes playing on AntStream.
+
+Enjoy!
