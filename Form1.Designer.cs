@@ -149,7 +149,7 @@
             Controls.Add(lbDevices);
             FormBorderStyle = FormBorderStyle.Fixed3D;
             Name = "frmMain";
-            Text = "iiConfigTool";
+            Text = "iiConfigTool v0.4 by HonkeyKong";
             Load += frmMain_Load;
             DragDrop += frmMain_DragDrop;
             DragEnter += frmMain_DragEnter;

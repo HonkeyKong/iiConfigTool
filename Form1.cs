@@ -1,7 +1,10 @@
 using System;
 using System.IO;
+using System.Xml;
+using System.Xml.Schema;
 using System.Diagnostics;
 using System.DirectoryServices;
+using System.Configuration;
 
 namespace iiConfig
 {
@@ -47,7 +50,8 @@ namespace iiConfig
             openFileDialog1.ShowDialog(this);
             if (File.Exists(openFileDialog1.FileName))
             {
-                lblCFGFile.Text = "File opened: " + openFileDialog1.FileName;
+                if (validateCFG(openFileDialog1.FileName)) lblCFGFile.Text = "File opened: " + openFileDialog1.FileName;
+                else openFileDialog1.FileName = "";
             }
         }
 
@@ -175,7 +179,8 @@ namespace iiConfig
                 openFileDialog1.FileName = file;
                 if (openFileDialog1.CheckFileExists)
                 {
-                    lblCFGFile.Text = "File opened: " + openFileDialog1.FileName;
+                    if (validateCFG(openFileDialog1.FileName)) lblCFGFile.Text = "File opened: " + openFileDialog1.FileName;
+                    else openFileDialog1.FileName = "";
                 }
             }
 
@@ -210,6 +215,44 @@ namespace iiConfig
             {
                 MessageBox.Show($"Error code {exitCode}: {output}", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        private bool validateCFG(string FilePath)
+        {
+            try
+            {
+                // Load and validate the XML document
+                string schemaFilePath = "mameconfig.xsd"; // Replace with your schema file path
+                XmlReaderSettings settings = new XmlReaderSettings();
+
+                settings.ValidationType = ValidationType.Schema;
+                XmlSchemaSet schemas = new XmlSchemaSet();
+                schemas.Add(null, schemaFilePath);
+                settings.Schemas = schemas;
+
+                settings.ValidationEventHandler += ValidationCallback;
+
+                using (XmlReader reader = XmlReader.Create(FilePath, settings))
+                {
+                    while (reader.Read()) { }
+                }
+
+                //MessageBox.Show("Validation successful!");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Validation failed: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+        }
+
+        private static void ValidationCallback(object sender, ValidationEventArgs e)
+        {
+            if (e.Severity == XmlSeverityType.Warning)
+                MessageBox.Show($"Warning: {e.Message}", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            else if (e.Severity == XmlSeverityType.Error)
+                Console.WriteLine($"Error: {e.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
 
         private void btnFixClock_Click(object sender, EventArgs e)
@@ -258,7 +301,8 @@ namespace iiConfig
             if (exitCode != 0)
             {
                 MessageBox.Show($"Error code {exitCode}: {output}", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            } else
+            }
+            else
             {
                 MessageBox.Show("Date and time updated successfully!", "Success!", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }

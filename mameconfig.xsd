@@ -1,0 +1,47 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <xs:element name="mameconfig">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="system" type="SystemType"/>
+      </xs:sequence>
+      <xs:attribute name="version" type="xs:string" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:complexType name="SystemType">
+    <xs:sequence>
+      <xs:element name="input" type="InputType"/>
+      <xs:element name="crosshairs" type="CrosshairsType"/>
+    </xs:sequence>
+    <xs:attribute name="name" type="xs:string" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="InputType">
+    <xs:sequence>
+      <xs:element name="port" type="PortType" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="PortType">
+    <xs:sequence>
+      <xs:element name="newseq" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="tag" type="xs:string" use="required"/>
+    <xs:attribute name="type" type="xs:string" use="required"/>
+    <xs:attribute name="mask" type="xs:string" use="required"/>
+    <xs:attribute name="defvalue" type="xs:string" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="CrosshairsType">
+    <xs:sequence>
+      <xs:element name="crosshair" type="CrosshairType" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="CrosshairType">
+    <xs:attribute name="player" type="xs:string" use="required"/>
+    <xs:attribute name="mode" type="xs:string" use="required"/>
+  </xs:complexType>
+
+</xs:schema>
