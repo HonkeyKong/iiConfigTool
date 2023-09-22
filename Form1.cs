@@ -5,11 +5,32 @@ using System.Xml.Schema;
 using System.Diagnostics;
 using System.DirectoryServices;
 using System.Configuration;
+using System.Windows.Forms;
 
 namespace iiConfig
 {
     public partial class frmMain : Form
     {
+        string processOutput = "";
+        int processExit = -1;
+
+        private bool runProcess(string processName, string args)
+        {
+            Process process = new Process();
+            process.StartInfo.FileName = processName;
+            process.StartInfo.Arguments = $"-s {strDevice} " + args;
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.RedirectStandardError = true;
+            process.StartInfo.UseShellExecute = false;
+            process.StartInfo.CreateNoWindow = true;
+
+            process.Start();
+
+            processOutput = process.StandardOutput.ReadToEnd();
+            processExit = process.ExitCode;
+            if (processExit == 0) { return true; } else { return false; }
+        }
+
         public string strDevice = "null";
         public frmMain()
         {
@@ -27,23 +48,16 @@ namespace iiConfig
 
         private void frmMain_Load(object sender, EventArgs e)
         {
-            Process process = new Process();
-            process.StartInfo.FileName = "adb";
-            process.StartInfo.Arguments = "devices";
-            process.StartInfo.RedirectStandardOutput = true;
-            process.StartInfo.RedirectStandardError = true;
-            process.StartInfo.UseShellExecute = false;
-            process.StartInfo.CreateNoWindow = true;
-
-            process.Start();
-
             int lstDevices = 0;
-            string output = process.StandardOutput.ReadToEnd();
-            lbDevices.Items.Clear();
-            foreach (string line in output.Split(new char[] { '\r', }))
+
+            if (runProcess("adb", "devices"))
             {
-                if (lstDevices > 0) lbDevices.Items.Add(line);
-                lstDevices++;
+                lbDevices.Items.Clear();
+                foreach (string line in processOutput.Split(new char[] { '\r', }))
+                {
+                    if (lstDevices > 0) lbDevices.Items.Add(line);
+                    lstDevices++;
+                }
             }
 
         }
@@ -72,89 +86,41 @@ namespace iiConfig
                 return;
             }
 
-            Process rootProcess = new Process();
-            rootProcess.StartInfo.FileName = "adb";
-            rootProcess.StartInfo.Arguments = $"-s {strDevice} root";
-            rootProcess.StartInfo.RedirectStandardOutput = true;
-            rootProcess.StartInfo.RedirectStandardError = true;
-            rootProcess.StartInfo.UseShellExecute = false;
-            rootProcess.StartInfo.CreateNoWindow = true;
-
-            rootProcess.Start();
-            string rootOutput = rootProcess.StandardOutput.ReadToEnd();
-            int exitCode = rootProcess.ExitCode;
-            if (exitCode != 0) { MessageBox.Show("Root failed.", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error); return; }
+            if (!runProcess("adb", "root")) { MessageBox.Show("Root failed.", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error); return; }
 
             string[] cfgNames = openFileDialog1.FileName.Split('\\');
             string romName = cfgNames[cfgNames.GetLength(0) - 1].Split('.')[0];
 
             string strPushCmd = $"-s {strDevice} push \"{openFileDialog1.FileName}\" /sdcard/Android/data/org.emulator.arcade/files/cfg/";
-            Process pushProcess = new Process();
-            pushProcess.StartInfo.FileName = "adb";
-            pushProcess.StartInfo.Arguments = strPushCmd;
-            pushProcess.StartInfo.RedirectStandardOutput = true;
-            pushProcess.StartInfo.RedirectStandardError = true;
-            pushProcess.StartInfo.UseShellExecute = false;
-            pushProcess.StartInfo.CreateNoWindow = true;
 
-            pushProcess.Start();
-
-            string pushOutput = pushProcess.StandardOutput.ReadToEnd();
-            exitCode = pushProcess.ExitCode;
-
-            if (exitCode == 0)
+            if (runProcess("adb", strPushCmd))
             {
-                MessageBox.Show($"{pushOutput}", "Success!", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show($"{processOutput}", "Success!", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             else
             {
-                MessageBox.Show($"Error code {exitCode}: {pushOutput}", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Error code {processExit}: {processOutput}", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
 
             if (!cbLightGun.Checked) return;
 
             string lgPushCmd = $"-s {strDevice} push lightgun.zip /sdcard/Android/data/org.emulator.arcade/files/artwork/lightgun/{romName}.zip";
-            //MessageBox.Show(lgPushCmd);
 
-            Process lgProcess = new Process();
-            lgProcess.StartInfo.FileName = "adb";
-            lgProcess.StartInfo.Arguments = lgPushCmd;
-            lgProcess.StartInfo.RedirectStandardOutput = true;
-            lgProcess.StartInfo.RedirectStandardError = true;
-            lgProcess.StartInfo.UseShellExecute = false;
-            lgProcess.StartInfo.CreateNoWindow = true;
-
-            lgProcess.Start();
-
-            string lgOutput = lgProcess.StandardOutput.ReadToEnd();
-            exitCode = lgProcess.ExitCode;
-
-            if (exitCode != 0)
+            if (!runProcess("adb", lgPushCmd))
             {
-                MessageBox.Show($"Error! {lgOutput}", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Error! {processOutput}", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
             string dbLoc = "/data/data/com.iircade.iiconsole/databases/Game.db";
 
             string dbUpdateCmd = $"update GAME set Reserve1=\'T#0#1\' where GAME.ID=\'{romName}.zip\';";
-            //MessageBox.Show(dbUpdateCmd);
-            Process dbProcess = new Process();
-            dbProcess.StartInfo.FileName = "adb";
-            dbProcess.StartInfo.Arguments = $"-s {strDevice} shell sqlite3 \\\"{dbLoc}\\\" \\\"{dbUpdateCmd}\\\"";
-            dbProcess.StartInfo.RedirectStandardOutput = true;
-            dbProcess.StartInfo.RedirectStandardError = true;
-            dbProcess.StartInfo.UseShellExecute = false;
-            dbProcess.StartInfo.CreateNoWindow = true;
+            string dbExecCmd = $"shell sqlite3 \\\"{dbLoc}\\\" \\\"{dbUpdateCmd}\\\"";
 
-            dbProcess.Start();
-            string dbOutput = dbProcess.StandardOutput.ReadToEnd();
-            exitCode = dbProcess.ExitCode;
-
-            if (exitCode == 0) MessageBox.Show("Gun configured successfully!", "Success!", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            if (runProcess("adb", dbExecCmd)) MessageBox.Show("Gun configured successfully!", "Success!", MessageBoxButtons.OK, MessageBoxIcon.Information);
             else
             {
-                MessageBox.Show($"Error! {dbOutput}", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Error! {processOutput}", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
@@ -197,26 +163,13 @@ namespace iiConfig
                 return;
             }
 
-            Process process = new Process();
-            process.StartInfo.FileName = "adb";
-            process.StartInfo.Arguments = $"-s {strDevice} reboot";
-            process.StartInfo.RedirectStandardOutput = true;
-            process.StartInfo.RedirectStandardError = true;
-            process.StartInfo.UseShellExecute = false;
-            process.StartInfo.CreateNoWindow = true;
-
-            process.Start();
-
-            string output = process.StandardOutput.ReadToEnd();
-            int exitCode = process.ExitCode;
-
-            if (exitCode == 0)
+            if (runProcess("adb", "reboot"))
             {
                 MessageBox.Show("Reboot successful.", "Success!", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             else
             {
-                MessageBox.Show($"Error code {exitCode}: {output}", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Error code {processExit}: {processOutput}", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -225,7 +178,7 @@ namespace iiConfig
             try
             {
                 // Load and validate the XML document
-                string schemaFilePath = "mameconfig.xsd"; // Replace with your schema file path
+                string schemaFilePath = "mameconfig.xsd";
                 XmlReaderSettings settings = new XmlReaderSettings();
 
                 settings.ValidationType = ValidationType.Schema;
@@ -239,8 +192,6 @@ namespace iiConfig
                 {
                     while (reader.Read()) { }
                 }
-
-                //MessageBox.Show("Validation successful!");
                 return true;
             }
             catch (Exception ex)
@@ -267,43 +218,16 @@ namespace iiConfig
             }
 
             string formattedDateTime = DateTime.Now.ToString("MMddHHmmyyyy.ss");
-            // MessageBox.Show(formattedDateTime, "Date/Time", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
-            Process process1 = new Process();
-            process1.StartInfo.FileName = "adb";
-            process1.StartInfo.Arguments = $"-s {strDevice} shell toybox date";
-            process1.StartInfo.RedirectStandardOutput = true;
-            process1.StartInfo.RedirectStandardError = true;
-            process1.StartInfo.UseShellExecute = false;
-            process1.StartInfo.CreateNoWindow = true;
-
-            process1.Start();
-
-            string output = process1.StandardOutput.ReadToEnd();
-            int exitCode = process1.ExitCode;
-
-            if (exitCode != 0)
+            if (!runProcess("adb", "shell toybox date"))
             {
-                MessageBox.Show($"Error code {exitCode}: {output}", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Error code {processExit}: {processOutput}", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            Process process2 = new Process();
-            process2.StartInfo.FileName = "adb";
-            process2.StartInfo.Arguments = $"-s {strDevice} shell \"su 0 toybox date {formattedDateTime}\"";
-            process2.StartInfo.RedirectStandardOutput = true;
-            process2.StartInfo.RedirectStandardError = true;
-            process2.StartInfo.UseShellExecute = false;
-            process2.StartInfo.CreateNoWindow = true;
-
-            process2.Start();
-
-            output = process2.StandardOutput.ReadToEnd();
-            exitCode = process2.ExitCode;
-
-            if (exitCode != 0)
+            if (!runProcess("adb", $"shell \"su 0 toybox date {formattedDateTime}\""))
             {
-                MessageBox.Show($"Error code {exitCode}: {output}", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Error code {processExit}: {processOutput}", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             else
             {
