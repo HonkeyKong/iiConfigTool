@@ -87,7 +87,7 @@ namespace iiConfig
             }
 
             //if((multiFiles) && (pushFiles == ""))
-            if ((!File.Exists(pushFiles)) && (multiFiles == false))
+            if ((pushFiles == "") && (multiFiles == false))
             {
                 MessageBox.Show("Select a CFG file first.", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
@@ -117,7 +117,7 @@ namespace iiConfig
                 return;
             }
             
-            string[] cfgNames = openFileDialog1.FileName.Split('\\');
+            string[] cfgNames = pushFiles.Split('\\');
             string romName = cfgNames[cfgNames.GetLength(0) - 1].Split('.')[0];
             string lgPushCmd = $"-s {strDevice} push lightgun.zip /sdcard/Android/data/org.emulator.arcade/files/artwork/lightgun/{romName}.zip";
 
@@ -151,7 +151,6 @@ namespace iiConfig
             {
                 e.Effect = DragDropEffects.None;
             }
-
         }
 
         private void frmMain_DragDrop(object sender, DragEventArgs e)
@@ -160,9 +159,12 @@ namespace iiConfig
             string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
             if (files.Length == 1)
             {
-                multiFiles = false;
-                pushFiles = $"\"{files[0]}\"";
-                lblCFGFile.Text = $"File opened: {files[0]}";
+                if (validateCFG(files[0]))
+                {
+                    multiFiles = false;
+                    pushFiles = $"\"{files[0]}\"";
+                    lblCFGFile.Text = $"File opened: {files[0]}";
+                }
             }
             else
             {
