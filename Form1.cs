@@ -13,7 +13,9 @@ namespace iiConfig
     {
         string processOutput = "";
         int processExit = -1;
-
+        
+        private bool multiFiles = false;
+        private string pushFiles = "";
         private bool runProcess(string processName, string args)
         {
             Process process = new Process();
@@ -67,7 +69,11 @@ namespace iiConfig
             openFileDialog1.ShowDialog(this);
             if (File.Exists(openFileDialog1.FileName))
             {
-                if (validateCFG(openFileDialog1.FileName)) lblCFGFile.Text = "File opened: " + openFileDialog1.FileName;
+                if (validateCFG(openFileDialog1.FileName))
+                {
+                    lblCFGFile.Text = "File opened: " + openFileDialog1.FileName;
+                    multiFiles = false;
+                }
                 else openFileDialog1.FileName = "";
             }
         }
@@ -80,7 +86,8 @@ namespace iiConfig
                 return;
             }
 
-            if (!File.Exists(openFileDialog1.FileName))
+            //if((multiFiles) && (pushFiles == ""))
+            if ((!File.Exists(pushFiles)) && (multiFiles == false))
             {
                 MessageBox.Show("Select a CFG file first.", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
@@ -88,10 +95,10 @@ namespace iiConfig
 
             if (!runProcess("adb", "root")) { MessageBox.Show("Root failed.", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error); return; }
 
-            string[] cfgNames = openFileDialog1.FileName.Split('\\');
-            string romName = cfgNames[cfgNames.GetLength(0) - 1].Split('.')[0];
-
-            string strPushCmd = $"-s {strDevice} push \"{openFileDialog1.FileName}\" /sdcard/Android/data/org.emulator.arcade/files/cfg/";
+            /*string strPushCmd == "";
+            if(multiFiles == false) strPushCmd = $"-s {strDevice} push \"{openFileDialog1.FileName}\" /sdcard/Android/data/org.emulator.arcade/files/cfg/";
+            else */
+            string strPushCmd = $"-s {strDevice} push {pushFiles} /sdcard/Android/data/org.emulator.arcade/files/cfg/";
 
             if (runProcess("adb", strPushCmd))
             {
@@ -103,7 +110,15 @@ namespace iiConfig
             }
 
             if (!cbLightGun.Checked) return;
-
+            
+            if(multiFiles)
+            {
+                MessageBox.Show("Sorry, only one light gun game can be configured at a time.");
+                return;
+            }
+            
+            string[] cfgNames = openFileDialog1.FileName.Split('\\');
+            string romName = cfgNames[cfgNames.GetLength(0) - 1].Split('.')[0];
             string lgPushCmd = $"-s {strDevice} push lightgun.zip /sdcard/Android/data/org.emulator.arcade/files/artwork/lightgun/{romName}.zip";
 
             if (!runProcess("adb", lgPushCmd))
@@ -141,18 +156,27 @@ namespace iiConfig
 
         private void frmMain_DragDrop(object sender, DragEventArgs e)
         {
+            pushFiles = "";
             string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
-            foreach (string file in files)
+            if (files.Length == 1)
             {
-                Console.WriteLine(file);  // Or handle the file path as needed
-                openFileDialog1.FileName = file;
-                if (openFileDialog1.CheckFileExists)
-                {
-                    if (validateCFG(openFileDialog1.FileName)) lblCFGFile.Text = "File opened: " + openFileDialog1.FileName;
-                    else openFileDialog1.FileName = "";
-                }
+                multiFiles = false;
+                pushFiles = $"\"{files[0]}\"";
+                lblCFGFile.Text = $"File opened: {files[0]}";
             }
-
+            else
+            {
+                multiFiles = true;
+                foreach (string file in files)
+                {
+                    if (File.Exists(file))
+                    {
+                        if (validateCFG(file)) pushFiles += $"\"{file}\" ";
+                        multiFiles = true;
+                    }
+                }
+                lblCFGFile.Text = $"{files.Length} files loaded.";
+            }
         }
 
         private void btnReboot_Click(object sender, EventArgs e)
