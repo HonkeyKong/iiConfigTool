@@ -1,11 +1,13 @@
 using System;
 using System.IO;
+using System.Timers;
 using System.Xml;
 using System.Xml.Schema;
 using System.Diagnostics;
 using System.DirectoryServices;
 using System.Configuration;
 using System.Windows.Forms;
+using System.ComponentModel.Design;
 
 namespace iiConfig
 {
@@ -13,12 +15,13 @@ namespace iiConfig
     {
         string processOutput = "";
         int processExit = -1;
-        
+        private static System.Timers.Timer? deviceTimer;
+
         private bool multiFiles = false;
         private string pushFiles = "";
         private bool runProcess(string processName, string args)
         {
-            Process process = new Process();
+            Process process = new();
             process.StartInfo.FileName = processName;
             process.StartInfo.Arguments = $"-s {strDevice} " + args;
             process.StartInfo.RedirectStandardOutput = true;
@@ -31,6 +34,32 @@ namespace iiConfig
             processOutput = process.StandardOutput.ReadToEnd();
             processExit = process.ExitCode;
             if (processExit == 0) { return true; } else { return false; }
+        }
+
+        private void refreshDevices()
+        {
+            int lstDevices = 0;
+            if (runProcess("adb", "devices"))
+            {
+                lbDevices.Items.Clear();
+                foreach (string line in processOutput.Split(new char[] { '\r', }))
+                {
+                    if (lstDevices > 0) lbDevices.Items.Add(line);
+                    lstDevices++;
+                }
+            }
+        }
+
+        private void OnTimedEvent(object? source, ElapsedEventArgs e)
+        {
+            if (this.InvokeRequired)
+            {
+                this.Invoke(new MethodInvoker(() => refreshDevices()));
+            }
+            else
+            {
+                refreshDevices();
+            }
         }
 
         public string strDevice = "null";
@@ -50,18 +79,20 @@ namespace iiConfig
 
         private void frmMain_Load(object sender, EventArgs e)
         {
-            int lstDevices = 0;
-
-            if (runProcess("adb", "devices"))
+            try
             {
-                lbDevices.Items.Clear();
-                foreach (string line in processOutput.Split(new char[] { '\r', }))
-                {
-                    if (lstDevices > 0) lbDevices.Items.Add(line);
-                    lstDevices++;
-                }
+                deviceTimer = new System.Timers.Timer(5000);
+                deviceTimer.Elapsed += OnTimedEvent;
+                deviceTimer.AutoReset = true;
+                deviceTimer.Enabled = true;
+                deviceTimer.Start();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error: " + ex.Message);
             }
 
+            refreshDevices();
         }
 
         private void btnSelectCFG_Click(object sender, EventArgs e)
@@ -86,7 +117,6 @@ namespace iiConfig
                 return;
             }
 
-            //if((multiFiles) && (pushFiles == ""))
             if ((pushFiles == "") && (multiFiles == false))
             {
                 MessageBox.Show("Select a CFG file first.", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -95,9 +125,6 @@ namespace iiConfig
 
             if (!runProcess("adb", "root")) { MessageBox.Show("Root failed.", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error); return; }
 
-            /*string strPushCmd == "";
-            if(multiFiles == false) strPushCmd = $"-s {strDevice} push \"{openFileDialog1.FileName}\" /sdcard/Android/data/org.emulator.arcade/files/cfg/";
-            else */
             string strPushCmd = $"-s {strDevice} push {pushFiles} /sdcard/Android/data/org.emulator.arcade/files/cfg/";
 
             if (runProcess("adb", strPushCmd))
@@ -199,25 +226,23 @@ namespace iiConfig
             }
         }
 
-        private bool validateCFG(string FilePath)
+        private static bool validateCFG(string FilePath)
         {
             try
             {
                 // Load and validate the XML document
                 string schemaFilePath = "mameconfig.xsd";
-                XmlReaderSettings settings = new XmlReaderSettings();
+                XmlReaderSettings settings = new();
 
                 settings.ValidationType = ValidationType.Schema;
-                XmlSchemaSet schemas = new XmlSchemaSet();
+                XmlSchemaSet schemas = new();
                 schemas.Add(null, schemaFilePath);
                 settings.Schemas = schemas;
 
                 settings.ValidationEventHandler += ValidationCallback;
 
-                using (XmlReader reader = XmlReader.Create(FilePath, settings))
-                {
-                    while (reader.Read()) { }
-                }
+                using XmlReader reader = XmlReader.Create(FilePath, settings);
+                while (reader.Read()) { }
                 return true;
             }
             catch (Exception ex)
