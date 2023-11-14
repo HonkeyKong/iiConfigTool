@@ -149,7 +149,7 @@
             Controls.Add(lbDevices);
             FormBorderStyle = FormBorderStyle.Fixed3D;
             Name = "frmMain";
-            Text = "iiConfig v0.7 by HonkeyKong";
+            Text = "iiConfig v0.8 by HonkeyKong";
             Load += frmMain_Load;
             DragDrop += frmMain_DragDrop;
             DragEnter += frmMain_DragEnter;

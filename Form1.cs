@@ -36,16 +36,23 @@ namespace iiConfig
             if (processExit == 0) { return true; } else { return false; }
         }
 
+        private string previousOutput = "";
+
         private void refreshDevices()
         {
             int lstDevices = 0;
             if (runProcess("adb", "devices"))
             {
-                lbDevices.Items.Clear();
-                foreach (string line in processOutput.Split(new char[] { '\r', }))
+                string newOutput = processOutput;
+                if (newOutput != previousOutput)
                 {
-                    if (lstDevices > 0) lbDevices.Items.Add(line);
-                    lstDevices++;
+                    lbDevices.Items.Clear();
+                    foreach (string line in newOutput.Split(new char[] { '\r', }))
+                    {
+                        if (lstDevices > 0) lbDevices.Items.Add(line);
+                        lstDevices++;
+                    }
+                    previousOutput = newOutput;
                 }
             }
         }
@@ -103,6 +110,7 @@ namespace iiConfig
                 if (validateCFG(openFileDialog1.FileName))
                 {
                     lblCFGFile.Text = "File opened: " + openFileDialog1.FileName;
+                    pushFiles = $"\"{openFileDialog1.FileName}\"";
                     multiFiles = false;
                 }
                 else openFileDialog1.FileName = "";
