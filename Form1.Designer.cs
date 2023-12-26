@@ -38,6 +38,7 @@
             label2 = new Label();
             cbLightGun = new CheckBox();
             btnFixClock = new Button();
+            btnFixLicense = new Button();
             SuspendLayout();
             // 
             // lbDevices
@@ -61,7 +62,7 @@
             // 
             // btnSelectCFG
             // 
-            btnSelectCFG.Location = new Point(318, 26);
+            btnSelectCFG.Location = new Point(318, 3);
             btnSelectCFG.Name = "btnSelectCFG";
             btnSelectCFG.Size = new Size(75, 23);
             btnSelectCFG.TabIndex = 3;
@@ -71,7 +72,7 @@
             // 
             // btnPushCFG
             // 
-            btnPushCFG.Location = new Point(318, 55);
+            btnPushCFG.Location = new Point(318, 32);
             btnPushCFG.Name = "btnPushCFG";
             btnPushCFG.Size = new Size(75, 23);
             btnPushCFG.TabIndex = 4;
@@ -86,7 +87,7 @@
             // lblCFGFile
             // 
             lblCFGFile.AutoSize = true;
-            lblCFGFile.Location = new Point(12, 169);
+            lblCFGFile.Location = new Point(12, 175);
             lblCFGFile.Name = "lblCFGFile";
             lblCFGFile.Size = new Size(325, 15);
             lblCFGFile.TabIndex = 5;
@@ -94,7 +95,7 @@
             // 
             // btnReboot
             // 
-            btnReboot.Location = new Point(318, 84);
+            btnReboot.Location = new Point(318, 61);
             btnReboot.Name = "btnReboot";
             btnReboot.Size = new Size(75, 23);
             btnReboot.TabIndex = 6;
@@ -114,7 +115,7 @@
             // cbLightGun
             // 
             cbLightGun.AutoSize = true;
-            cbLightGun.Location = new Point(318, 141);
+            cbLightGun.Location = new Point(318, 147);
             cbLightGun.Name = "cbLightGun";
             cbLightGun.Size = new Size(78, 19);
             cbLightGun.TabIndex = 8;
@@ -123,7 +124,7 @@
             // 
             // btnFixClock
             // 
-            btnFixClock.Location = new Point(320, 112);
+            btnFixClock.Location = new Point(320, 89);
             btnFixClock.Name = "btnFixClock";
             btnFixClock.Size = new Size(75, 23);
             btnFixClock.TabIndex = 9;
@@ -131,13 +132,24 @@
             btnFixClock.UseVisualStyleBackColor = true;
             btnFixClock.Click += btnFixClock_Click;
             // 
+            // btnFixLicense
+            // 
+            btnFixLicense.Location = new Point(320, 118);
+            btnFixLicense.Name = "btnFixLicense";
+            btnFixLicense.Size = new Size(75, 23);
+            btnFixLicense.TabIndex = 9;
+            btnFixLicense.Text = "Fix License";
+            btnFixLicense.UseVisualStyleBackColor = true;
+            btnFixLicense.Click += btnFixLicense_Click;
+            // 
             // frmMain
             // 
             AllowDrop = true;
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             AutoSize = true;
-            ClientSize = new Size(402, 193);
+            ClientSize = new Size(402, 198);
+            Controls.Add(btnFixLicense);
             Controls.Add(btnFixClock);
             Controls.Add(cbLightGun);
             Controls.Add(label2);
@@ -149,7 +161,7 @@
             Controls.Add(lbDevices);
             FormBorderStyle = FormBorderStyle.Fixed3D;
             Name = "frmMain";
-            Text = "iiConfig v0.8 by HonkeyKong";
+            Text = "iiConfig v0.9 by HonkeyKong";
             Load += frmMain_Load;
             DragDrop += frmMain_DragDrop;
             DragEnter += frmMain_DragEnter;
@@ -168,5 +180,6 @@
         private Label label2;
         private CheckBox cbLightGun;
         private Button btnFixClock;
+        private Button btnFixLicense;
     }
 }

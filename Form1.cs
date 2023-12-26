@@ -8,6 +8,7 @@ using System.DirectoryServices;
 using System.Configuration;
 using System.Windows.Forms;
 using System.ComponentModel.Design;
+using System.Runtime.CompilerServices;
 
 namespace iiConfig
 {
@@ -145,13 +146,13 @@ namespace iiConfig
             }
 
             if (!cbLightGun.Checked) return;
-            
-            if(multiFiles)
+
+            if (multiFiles)
             {
                 MessageBox.Show("Sorry, only one light gun game can be configured at a time.");
                 return;
             }
-            
+
             string[] cfgNames = pushFiles.Split('\\');
             string romName = cfgNames[cfgNames.GetLength(0) - 1].Split('.')[0];
             string lgPushCmd = $"-s {strDevice} push lightgun.zip /sdcard/Android/data/org.emulator.arcade/files/artwork/lightgun/{romName}.zip";
@@ -165,6 +166,7 @@ namespace iiConfig
             string dbLoc = "/data/data/com.iircade.iiconsole/databases/Game.db";
 
             string dbUpdateCmd = $"update GAME set Reserve1=\'T#0#1\' where GAME.ID=\'{romName}.zip\';";
+            string licenseUpdateCmd = $"update Config set Preload=\'1\';";
             string dbExecCmd = $"shell sqlite3 \\\"{dbLoc}\\\" \\\"{dbUpdateCmd}\\\"";
 
             if (runProcess("adb", dbExecCmd)) MessageBox.Show("Gun configured successfully!", "Success!", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -234,18 +236,30 @@ namespace iiConfig
             }
         }
 
+        private static void ValidationCallback(object sender, ValidationEventArgs e)
+        {
+            if (e.Severity == XmlSeverityType.Warning)
+                MessageBox.Show($"Warning: {e.Message}", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            else if (e.Severity == XmlSeverityType.Error)
+                Console.WriteLine($"Error: {e.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+
         private static bool validateCFG(string FilePath)
         {
             try
             {
+                string xsdData = "<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\">\r\n\r\n  <xs:element name=\"mameconfig\">\r\n    <xs:complexType>\r\n      <xs:sequence>\r\n        <xs:element name=\"system\" type=\"SystemType\"/>\r\n      </xs:sequence>\r\n      <xs:attribute name=\"version\" type=\"xs:string\" use=\"required\"/>\r\n    </xs:complexType>\r\n  </xs:element>\r\n\r\n  <xs:complexType name=\"SystemType\">\r\n    <xs:sequence>\r\n      <xs:element name=\"input\" type=\"InputType\"/>\r\n      <xs:element name=\"crosshairs\" type=\"CrosshairsType\"/>\r\n    </xs:sequence>\r\n    <xs:attribute name=\"name\" type=\"xs:string\" use=\"required\"/>\r\n  </xs:complexType>\r\n\r\n  <xs:complexType name=\"InputType\">\r\n    <xs:sequence>\r\n      <xs:element name=\"port\" type=\"PortType\" maxOccurs=\"unbounded\"/>\r\n    </xs:sequence>\r\n  </xs:complexType>\r\n\r\n  <xs:complexType name=\"PortType\">\r\n    <xs:sequence>\r\n      <xs:element name=\"newseq\" type=\"xs:string\" minOccurs=\"0\" maxOccurs=\"unbounded\"/>\r\n    </xs:sequence>\r\n    <xs:attribute name=\"tag\" type=\"xs:string\" use=\"required\"/>\r\n    <xs:attribute name=\"type\" type=\"xs:string\" use=\"required\"/>\r\n    <xs:attribute name=\"mask\" type=\"xs:string\" use=\"required\"/>\r\n    <xs:attribute name=\"defvalue\" type=\"xs:string\" use=\"required\"/>\r\n  </xs:complexType>\r\n\r\n  <xs:complexType name=\"CrosshairsType\">\r\n    <xs:sequence>\r\n      <xs:element name=\"crosshair\" type=\"CrosshairType\" maxOccurs=\"unbounded\"/>\r\n    </xs:sequence>\r\n  </xs:complexType>\r\n\r\n  <xs:complexType name=\"CrosshairType\">\r\n    <xs:attribute name=\"player\" type=\"xs:string\" use=\"required\"/>\r\n    <xs:attribute name=\"mode\" type=\"xs:string\" use=\"required\"/>\r\n  </xs:complexType>\r\n\r\n</xs:schema>\r\n";
+
                 // Load and validate the XML document
-                string schemaFilePath = "mameconfig.xsd";
                 XmlReaderSettings settings = new();
 
                 settings.ValidationType = ValidationType.Schema;
                 XmlSchemaSet schemas = new();
-                schemas.Add(null, schemaFilePath);
+                schemas.Add(null, XmlReader.Create(new StringReader(xsdData)));
                 settings.Schemas = schemas;
+
+                // Ignore whitespace
+                settings.IgnoreWhitespace = true;
 
                 settings.ValidationEventHandler += ValidationCallback;
 
@@ -258,14 +272,6 @@ namespace iiConfig
                 MessageBox.Show($"Validation failed: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return false;
             }
-        }
-
-        private static void ValidationCallback(object sender, ValidationEventArgs e)
-        {
-            if (e.Severity == XmlSeverityType.Warning)
-                MessageBox.Show($"Warning: {e.Message}", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            else if (e.Severity == XmlSeverityType.Error)
-                Console.WriteLine($"Error: {e.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
 
         private void btnFixClock_Click(object sender, EventArgs e)
@@ -293,6 +299,26 @@ namespace iiConfig
                 MessageBox.Show("Date and time updated successfully!", "Success!", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
 
+        }
+
+        private void btnFixLicense_Click(object sender, EventArgs e)
+        {
+            if ((strDevice == "null") || (strDevice == ""))
+            {
+                MessageBox.Show("Select a device first.", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            string dbLoc = "/data/data/com.iircade.iiconsole/databases/Game.db";
+            string licenseUpdateCmd = $"update CONFIG set Preload=\'1\';";
+            string dbExecCmd = $"shell sqlite3 \\\"{dbLoc}\\\" \\\"{licenseUpdateCmd}\\\"";
+
+            if (runProcess("adb", dbExecCmd)) MessageBox.Show("Licenses fixed successfully!", "Success!", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            else
+            {
+                MessageBox.Show($"Error! {processOutput}", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
         }
     }
 }
